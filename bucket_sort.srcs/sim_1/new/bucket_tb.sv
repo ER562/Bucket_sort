@@ -26,7 +26,7 @@ module bucket_tb#(
     logic read_en;
     logic [DATA_WIDTH - 1 : 0] read_data;
     
-    //instancja modu³u
+    //module instance
     bucket#(
         .DATA_WIDTH (DATA_WIDTH),
         .SIZE_OF_BUCKET (SIZE_OF_BUCKET)
@@ -34,21 +34,21 @@ module bucket_tb#(
         .clk (clk),
         .rst (rst),
     
-        //zapisywanie 
+        //data writing 
         .write_en (write_en),
         .write_data (write_data),
         
-        //odczytywanie
+        //data reading
         .read_en (read_en),
         .read_data (read_data),
         
-        //sterowanie sortowaniem
+        //sorting control
         .be (be),
         .done (done)
     );
     
     initial begin
-        //inicjalizacja tablic i sygna³ów
+        //array and signal initialization
         $srandom(234);
         for(i = 0 ; i < DATA_VOLUME ; i = i + 1)begin
             @(posedge clk);
@@ -61,14 +61,14 @@ module bucket_tb#(
         read_en = 0;
         be = 0;
         
-        //testowanie modu³u
+        //module testing
         #10
         @(posedge clk);
         rst <= 1;
         @(posedge clk);
         rst <= 0;
         
-        //zapisanie danych do modu³u
+        //writing data to module instance
         @(posedge clk);
         write_en <= 1;
         for(i = 0 ; i < DATA_VOLUME ; i = i + 1)begin
@@ -77,13 +77,13 @@ module bucket_tb#(
         end
         write_en <= 0;
         @(posedge clk);
-        //w³¹czenie sortowania
+        //sorting initialization
         be <= 1;
         @(posedge clk);
         be <= 0;
         
         wait(done == 1);
-        //odczytywanie
+        //data reading
         @(posedge clk);
         read_en <= 1;
         @(posedge clk);
@@ -95,16 +95,16 @@ module bucket_tb#(
         #1
         read_en <= 0;
         
-        //porównanie
+        //comparing
         input_data.sort();
         for(i = 0 ; i < DATA_VOLUME ; i = i + 1)begin
-            $display("wejœcie: %0d    wyjœcie: %0d", input_data[i], output_data[i]);
+            $display("Input: %0d    Output: %0d", input_data[i], output_data[i]);
         end
-        $display("Porównywanie");
+        $display("Comparing");
         if(input_data == output_data)begin
-            $display("dane s¹ posortowane");
+            $display("data is sorted");
         end else begin
-            $display("dane nie s¹ posortowane");
+            $display("data is not sorted");
         end
         
         $finish;

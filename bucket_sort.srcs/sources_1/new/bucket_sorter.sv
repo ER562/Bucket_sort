@@ -1,31 +1,31 @@
 `timescale 1ns / 1ps
 
 module bucket_sorter #(
-    parameter DATA_WIDTH = 8,   //wielkoœæ pojedyñczego elementu
-    parameter DATA_VOLUME = 9,   //iloœæ elementów, które mo¿na zapisaæ
+    parameter DATA_WIDTH = 8,   //size of single data point
+    parameter DATA_VOLUME = 9,   //maximum data points that can be saved
     parameter DECISION_BITS = 3
 )(
     input logic clk,
     input logic rst,
 
-    //zapisywanie 
+    //data writing
     input logic write_en,
     input logic [DATA_WIDTH - 1 : 0] write_data,
     
-    //odczytywanie
+    //data eading
     input logic read_en,
     output logic [DATA_WIDTH - 1 : 0] read_data,
     output logic valid_output,
     
-    //sterowanie sortowaniem
+    //sorting control
     input logic be,
     output logic done,
     
-    //iloœæ danych
+    //number of elements currently in this instance
     output logic [$clog2(DATA_VOLUME + 1) - 1 : 0] num_of_elements
 );
 
-    //zmienne do obs³ugi kube³ków
+    //variables for bucket controll
     logic [2**DECISION_BITS - 1 : 0] write_en_bus;
     logic [DATA_WIDTH - 1 : 0] write_data_buffer;
     
@@ -35,7 +35,7 @@ module bucket_sorter #(
     
     logic be_sorting;
     logic [2**DECISION_BITS - 1 : 0] done_sorting;
-    logic [2**DECISION_BITS - 1 : 0] done_sorting_latch;    //sortowania koñcz¹ siê w ró¿nych momentach w czasiê wiêc trzeba wszystkie dodaæ do zatrzasku
+    logic [2**DECISION_BITS - 1 : 0] done_sorting_latch;
 
     genvar z;
     generate
@@ -61,13 +61,13 @@ module bucket_sorter #(
         end
     endgenerate
     
-    //pozosta³e zmienne
+    //remaining variables
     logic currently_sorting;
     logic [2**DECISION_BITS - 1 : 0] current_bucket;
     logic currently_reading;
     logic read_delay;
     
-    //maski do kube³ków
+    //bucket masks
     logic [DECISION_BITS - 1 : 0] decision_bit_mask [2**DECISION_BITS - 1 : 0];
     genvar h;
     generate
@@ -90,7 +90,7 @@ module bucket_sorter #(
         end else begin
             done_sorting_latch <= done_sorting_latch | done_sorting;
         
-            if(write_en && currently_sorting == 0)begin   //zapis
+            if(write_en && currently_sorting == 0)begin   //data writing
                 write_data_buffer <= write_data;
                 num_of_elements <= num_of_elements + 1;
                 for(int i = 0 ; i < 2**DECISION_BITS ; i = i + 1)begin
@@ -98,7 +98,7 @@ module bucket_sorter #(
                         write_en_bus <= (1'b1 << i);
                     end
                 end
-            end else if(read_en && currently_sorting == 0) begin   //odczyt danych
+            end else if(read_en && currently_sorting == 0) begin   //data reading
                 if(num_of_elements >= 0)begin
                     if(read_delay)begin
                         read_data <= read_data_buffer[current_bucket];
@@ -108,28 +108,28 @@ module bucket_sorter #(
                         end else begin
                             num_of_elements <= num_of_elements - 1;
                         end
-                    end else if(stack_pointer_buffer[current_bucket] > 0)begin   //w kube³ku s¹ dane
-                        valid_output <= 0;  //to musi byæ gdy zmieniamy kube³ek ¿eby ostatni element 
+                    end else if(stack_pointer_buffer[current_bucket] > 0)begin
+                        valid_output <= 0;
                         read_en_bus <= 1'b1 << current_bucket;
                         read_delay <= 1;
                     end else begin
-                        valid_output <= 0;  //to musi byæ gdy zmieniamy kube³ek ¿eby ostatni element odczytaæ
+                        valid_output <= 0;
                         current_bucket <= current_bucket + 1;
                     end
                 end else begin
                     valid_output <= 0;
                 end
-            end else if(be && currently_sorting == 0)begin    //w³¹czenie sortowania
+            end else if(be && currently_sorting == 0)begin    //sorting start
                 be_sorting <= 1;
                 currently_sorting <= 1;
-            end else if(currently_sorting)begin //wy³¹czenie sortowana
+            end else if(currently_sorting)begin //end of sorting
                 be_sorting <= 0;
                 if(done_sorting_latch == '1)begin
                     currently_sorting <= 0;
                     done <= 1;
                     done_sorting_latch <= '0;
                 end
-            end else begin  //stan do którego nie powinno siê wchodziæ je¿eli s¹ wykonywane jakiekolwiek operacje
+            end else begin
                 write_en_bus <= '0;
                 done <= 0;
                 valid_output <= 0;

@@ -1,34 +1,34 @@
 `timescale 1ns / 1ps
 
 module bucket#(
-    parameter DATA_WIDTH = 8,   //wielkoœæ pojedyñczego elementu
-    parameter SIZE_OF_BUCKET = 10   //iloœæ elementów, które mo¿na zapisaæ
+    parameter DATA_WIDTH = 8,
+    parameter SIZE_OF_BUCKET = 10
 )(
     input logic clk,
     input logic rst,
 
-    //zapisywanie 
+    //data writing 
     input logic write_en,
     input logic [DATA_WIDTH - 1 : 0] write_data,
     
-    //odczytywanie
+    //data eading
     input logic read_en,
     output logic [DATA_WIDTH - 1 : 0] read_data,
     
-    //sterowanie sortowaniem
+    //sorting control
     input logic be,
     output logic done,
     
-    //iloœæ danych
-    logic [$clog2(SIZE_OF_BUCKET + 1) - 1 : 0] stack_pointer   //stack pointer zawsze jest w miejscu w, którym zapisujemy, wiêc przy odczycie trzeba odj¹æ 1
+    //number of elements currently in this instance
+    logic [$clog2(SIZE_OF_BUCKET + 1) - 1 : 0] stack_pointer   //stack pointer is always in place where new data point would be placed
 );
-    //pamiêæ
+    //memory
     logic [DATA_WIDTH - 1 : 0] memory [SIZE_OF_BUCKET - 1 : 0];
     
-    //sortowanie
+    //sorting
     logic currently_sorting;
     logic [$clog2(SIZE_OF_BUCKET + 1) - 1 : 0] sorter_loop;
-    logic odd_even; //je¿eli to jest 0 to bierzemy takie indeksy: 2, 3 je¿eli 1 to: 1, 2
+    logic odd_even;
 
     always_ff @(posedge clk)begin
         if(currently_sorting ==0)begin
@@ -42,10 +42,10 @@ module bucket#(
             currently_sorting <= 0;
             sorter_loop <= 0;
         end else begin
-            if(write_en && stack_pointer < SIZE_OF_BUCKET && currently_sorting == 0)begin //zapis
+            if(write_en && stack_pointer < SIZE_OF_BUCKET && currently_sorting == 0)begin
                 memory[stack_pointer] <= write_data;
                 stack_pointer <= stack_pointer + 1;
-            end else if(read_en && stack_pointer != 0 && currently_sorting == 0)begin //odczyt
+            end else if(read_en && stack_pointer != 0 && currently_sorting == 0)begin
                 read_data <= memory[stack_pointer - 1];
                 stack_pointer <= stack_pointer - 1;
             end else if(be && currently_sorting == 0)begin
